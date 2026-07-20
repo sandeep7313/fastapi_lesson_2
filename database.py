@@ -9,17 +9,22 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-if not DATABASE_URL:
-    # Fallback/default URL for safety, but we'll print a warning
-    print("WARNING: DATABASE_URL not set in environment.")
-    DATABASE_URL = "sqlite:///./temp.db"  # Fallback to local sqlite if not set
-elif DATABASE_URL.startswith("postgres://"):
+# Check if DATABASE_URL is missing or contains placeholder values like "@host"
+if not DATABASE_URL or "@host" in DATABASE_URL or "user:password" in DATABASE_URL:
+    print("WARNING: Valid DATABASE_URL not found in .env. Falling back to local SQLite database (temp.db).")
+    DATABASE_URL = "sqlite:///./temp.db"
+
+if DATABASE_URL.startswith("postgres://"):
     # SQLAlchemy requires "postgresql://" instead of "postgres://"
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
+# Configure engine arguments
+connect_args = {}
+if DATABASE_URL.startswith("sqlite"):
+    connect_args["check_same_thread"] = False
+
 # Create the SQLAlchemy engine
-# pool_pre_ping=True helps maintain connection stability, especially with serverless databases like Neon
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+engine = create_engine(DATABASE_URL, connect_args=connect_args, pool_pre_ping=True)
 
 # Create SessionLocal class for database sessions
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -34,3 +39,4 @@ def get_db():
         yield db
     finally:
         db.close()
+
