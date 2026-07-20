@@ -18,7 +18,7 @@ Base.metadata.create_all(bind=engine)
 async def lifespan(app: FastAPI):
     # Startup: Retrieve Upstash Redis URL from environment
     redis_url = os.getenv("REDIS_URL")
-    if redis_url:
+    if redis_url and "host:port" not in redis_url:
         try:
             # Connect to Redis using asyncio Redis client
             redis = aioredis.from_url(redis_url, encoding="utf8", decode_responses=True)
@@ -27,9 +27,10 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             print(f"Failed to initialize Redis cache backend: {e}")
     else:
-        print("WARNING: REDIS_URL not set. Endpoint caching will not be enabled.")
+        print("WARNING: Valid REDIS_URL not configured. Endpoint caching disabled.")
     
     yield
+
 
 app = FastAPI(title="FastAPI Neon & Upstash Redis Cache API", lifespan=lifespan)
 
