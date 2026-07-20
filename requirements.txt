@@ -1,1 +1,6 @@
 fastapi[standard]
+sqlalchemy
+psycopg2-binary
+redis
+fastapi-cache2[redis]
+python-dotenv
